@@ -33,6 +33,7 @@ window.adobeDataLayer.push({
   component: {
     carousel: {
       carousel1: {
+        id: '/content/mysite/en/home/jcr:content/root/carousel1',
         shownItems: [
           'item1', null, 'item3'
         ]
@@ -42,13 +43,13 @@ window.adobeDataLayer.push({
   }
 });
 
-window.adobeDataLayer.getState().component.carousel;
+console.log('Pushing component: ', window.adobeDataLayer.getState('component.carousel'));
 
 // getState() returns a copy of the state
 
 window.adobeDataLayer.getState().component.carousel.carousel2.id = 'new id';
 
-window.adobeDataLayer.getState().component.carousel.carousel2
+window.adobeDataLayer.getState('component.carousel.carousel2.id');
 
 // update an object
 
@@ -57,21 +58,21 @@ window.adobeDataLayer.push({
     carousel: {
       carousel1: {
         shownItems: [
-          'item1', 'item2-new'
+          'item1', 'item3-new'
         ]
       }
     }
   }
 });
 
-window.adobeDataLayer.getState().component.carousel.carousel1;
+window.adobeDataLayer.getState('component.carousel.carousel1.shownItems');
 
 // -----------------------------------------------------------------------------------------------------------------
 // Pushing a function
 // -----------------------------------------------------------------------------------------------------------------
 
-adobeDataLayer.push(function(dl) {
-  console.log('Pushing a function:')
+window.adobeDataLayer.push(function(dl) {
+  console.log('Pushing a function:');
   console.log(dl.getState());
 });
 
@@ -79,15 +80,15 @@ adobeDataLayer.push(function(dl) {
 // Pushing an event
 // -----------------------------------------------------------------------------------------------------------------
 
-adobeDataLayer.push({
-  event: "clicked",
+window.adobeDataLayer.push({
+  event: 'clicked',
   eventInfo: {
-    reference: "component.carousel.carousel1"
+    reference: 'component.carousel.carousel1'
   },
   component: {
     carousel: {
       carousel1: {
-        id: '/content/mysite/en/home/jcr:content/root/carousel1-new',
+        id: '/content/mysite/en/home/jcr:content/root/carousel1-new'
       }
     }
   }
@@ -119,11 +120,11 @@ const fct2 = function(event, oldState, newState) {
   console.log('fct2');
   console.log('this', this);
   console.log('event', event);
-  console.log('oldState',oldState);
+  console.log('oldState', oldState);
   console.log('newState', newState);
 };
 
-window.adobeDataLayer.addEventListener('adobeDataLayer:change', fct2, {scope: 'future'});
+window.adobeDataLayer.addEventListener('adobeDataLayer:change', fct2, { scope: 'future' });
 
 window.adobeDataLayer.push({
   component: {
@@ -144,11 +145,11 @@ const fct3 = function(event, oldValue, newValue) {
   console.log('fct3');
   console.log('this', this);
   console.log('event', event);
-  console.log('oldValue',oldValue);
+  console.log('oldValue', oldValue);
   console.log('newValue', newValue);
 };
 
-window.adobeDataLayer.addEventListener('adobeDataLayer:change', fct3, {path: 'component.carousel.carousel5'});
+window.adobeDataLayer.addEventListener('adobeDataLayer:change', fct3, { path: 'component.carousel.carousel5' });
 
 window.adobeDataLayer.push({
   component: {

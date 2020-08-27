@@ -14,19 +14,30 @@ const isEmpty = require('lodash/isEmpty');
 const merge = require('lodash/merge');
 
 const testData = require('./testData');
-const DataLayer = require('../scripts/DataLayer');
+const ITEM_CONSTRAINTS = require('../itemConstraints');
+const DataLayer = require('../');
 let adobeDataLayer;
 
-beforeEach(() => {
-  adobeDataLayer = [];
-  new DataLayer.Manager({ dataLayer: adobeDataLayer });
-});
+const ancestorRemoved = require('../utils/ancestorRemoved');
+const customMerge = require('../utils/customMerge');
+const dataMatchesContraints = require('../utils/dataMatchesContraints');
+const indexOfListener = require('../utils/indexOfListener');
+const listenerMatch = require('../utils/listenerMatch');
+
+const clearDL = function() {
+  beforeEach(() => {
+    adobeDataLayer = [];
+    DataLayer.Manager({ dataLayer: adobeDataLayer });
+  });
+};
 
 // -----------------------------------------------------------------------------------------------------------------
 // State
 // -----------------------------------------------------------------------------------------------------------------
 
 describe('State', () => {
+  clearDL();
+
   test('getState()', () => {
     const carousel1 = {
       id: '/content/mysite/en/home/jcr:content/root/carousel1',
@@ -41,8 +52,54 @@ describe('State', () => {
     };
     adobeDataLayer.push(data);
     expect(adobeDataLayer.getState()).toEqual(data);
-    expect(adobeDataLayer.getState("component.carousel.carousel1")).toEqual(carousel1);
-    expect(isEmpty(adobeDataLayer.getState("undefined-path")));
+    expect(adobeDataLayer.getState('component.carousel.carousel1')).toEqual(carousel1);
+    expect(isEmpty(adobeDataLayer.getState('undefined-path')));
+  });
+});
+
+// -----------------------------------------------------------------------------------------------------------------
+// Initialization order
+// -----------------------------------------------------------------------------------------------------------------
+
+describe('Initialization order', () => {
+  beforeEach(() => {
+    adobeDataLayer = [];
+  });
+
+  test('listener > event > initialization', () => {
+    const mockCallback = jest.fn();
+    adobeDataLayer.push(function(dl) { dl.addEventListener('adobeDataLayer:event', mockCallback); });
+    adobeDataLayer.push(testData.carousel1click);
+    DataLayer.Manager({ dataLayer: adobeDataLayer });
+
+    expect(mockCallback.mock.calls.length, 'callback triggered once').toBe(1);
+  });
+
+  test('event > listener > initialization', () => {
+    const mockCallback = jest.fn();
+    adobeDataLayer.push(testData.carousel1click);
+    adobeDataLayer.push(function(dl) { dl.addEventListener('adobeDataLayer:event', mockCallback); });
+    DataLayer.Manager({ dataLayer: adobeDataLayer });
+
+    expect(mockCallback.mock.calls.length, 'callback triggered once').toBe(1);
+  });
+
+  test('listener > initialization > event', () => {
+    const mockCallback = jest.fn();
+    adobeDataLayer.push(function(dl) { dl.addEventListener('adobeDataLayer:event', mockCallback); });
+    DataLayer.Manager({ dataLayer: adobeDataLayer });
+    adobeDataLayer.push(testData.carousel1click);
+
+    expect(mockCallback.mock.calls.length, 'callback triggered once').toBe(1);
+  });
+
+  test('event > initialization > listener', () => {
+    const mockCallback = jest.fn();
+    adobeDataLayer.push(testData.carousel1click);
+    DataLayer.Manager({ dataLayer: adobeDataLayer });
+    adobeDataLayer.push(function(dl) { dl.addEventListener('adobeDataLayer:event', mockCallback); });
+
+    expect(mockCallback.mock.calls.length, 'callback triggered once').toBe(1);
   });
 });
 
@@ -51,9 +108,22 @@ describe('State', () => {
 // -----------------------------------------------------------------------------------------------------------------
 
 describe('Data', () => {
+  clearDL();
+
   test('push page', () => {
     adobeDataLayer.push(testData.page1);
     expect(adobeDataLayer.getState(), 'page is in data layer after push').toStrictEqual(testData.page1);
+  });
+
+  test('push data, override and remove', () => {
+    adobeDataLayer.push({ test: 'foo' });
+    expect(adobeDataLayer.getState(), 'data pushed').toStrictEqual({ test: 'foo' });
+
+    adobeDataLayer.push({ test: 'bar' });
+    expect(adobeDataLayer.getState(), 'data overriden').toStrictEqual({ test: 'bar' });
+
+    adobeDataLayer.push({ test: null });
+    expect(adobeDataLayer.getState(), 'data removed').toStrictEqual({});
   });
 
   test('push components and override', () => {
@@ -85,6 +155,12 @@ describe('Data', () => {
     expect(adobeDataLayer.getState(), 'carousel 1 with data, carousel 2 empty').toStrictEqual(carousel2empty);
   });
 
+  test('push eventInfo without event', () => {
+    adobeDataLayer.push({ eventInfo: 'test' });
+
+    expect(adobeDataLayer.getState(), 'no event info added').toStrictEqual({});
+  });
+
   test('push invalid data type - string', () => {
     adobeDataLayer.push('test');
 
@@ -98,17 +174,17 @@ describe('Data', () => {
   });
 
   test('push initial data provided before data layer initialization', () => {
-    adobeDataLayer = [ testData.carousel1, testData.carousel2 ];
-    new DataLayer.Manager({ dataLayer: adobeDataLayer });
+    adobeDataLayer = [testData.carousel1, testData.carousel2];
+    DataLayer.Manager({ dataLayer: adobeDataLayer });
 
     expect(adobeDataLayer.getState(), 'all items are pushed to data layer state').toStrictEqual(merge({}, testData.carousel1, testData.carousel2));
   });
 
   test('invalid initial data triggers error', () => {
     // Catches console.error function which should be triggered by data layer during this test
-    var consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    var consoleSpy = jest.spyOn(console, 'error').mockImplementation();
     adobeDataLayer = ['test'];
-    new DataLayer.Manager({ dataLayer: adobeDataLayer });
+    DataLayer.Manager({ dataLayer: adobeDataLayer });
 
     expect(adobeDataLayer.getState(), 'initialization').toStrictEqual({});
     expect(consoleSpy).toHaveBeenCalled();
@@ -118,7 +194,7 @@ describe('Data', () => {
 
   test('push on / off listeners is not allowed', () => {
     adobeDataLayer.push({
-      on: 'click' ,
+      on: 'click',
       handler: jest.fn()
     });
     adobeDataLayer.push({
@@ -134,9 +210,34 @@ describe('Data', () => {
 // -----------------------------------------------------------------------------------------------------------------
 
 describe('Events', () => {
+  clearDL();
+
   test('push simple event', () => {
     adobeDataLayer.push(testData.carousel1click);
     expect(adobeDataLayer.getState()).toStrictEqual(testData.carousel1);
+  });
+
+  test('check number of arguments in callback', () => {
+    let calls = 0;
+
+    adobeDataLayer.addEventListener('test', function() { calls = arguments.length; });
+
+    adobeDataLayer.push({ event: 'test' });
+    expect(calls, 'just one argument if no data is added').toStrictEqual(1);
+
+    adobeDataLayer.push({ event: 'test', eventInfo: 'test' });
+    expect(calls, 'just one argument if no data is added').toStrictEqual(1);
+
+    adobeDataLayer.push({ event: 'test', somekey: 'somedata' });
+    expect(calls, 'three arguments if data is added').toStrictEqual(3);
+  });
+
+  test('check if eventInfo is passed to callback', () => {
+    adobeDataLayer.addEventListener('test', function() {
+      expect(arguments[0].eventInfo).toStrictEqual('test');
+    });
+
+    adobeDataLayer.push({ event: 'test', eventInfo: 'test' });
   });
 });
 
@@ -145,6 +246,8 @@ describe('Events', () => {
 // -----------------------------------------------------------------------------------------------------------------
 
 describe('Functions', () => {
+  clearDL();
+
   test('push simple function', () => {
     const mockCallback = jest.fn();
     adobeDataLayer.push(mockCallback);
@@ -154,7 +257,7 @@ describe('Functions', () => {
   test('function adds event listener for adobeDataLayer:change', () => {
     const mockCallback = jest.fn();
     const addEventListener = function(adl) {
-        adl.addEventListener('adobeDataLayer:change', mockCallback);
+      adl.addEventListener('adobeDataLayer:change', mockCallback);
     };
 
     adobeDataLayer.push(testData.carousel1);
@@ -182,9 +285,14 @@ describe('Functions', () => {
 // -----------------------------------------------------------------------------------------------------------------
 
 describe('Event listeners', () => {
+  clearDL();
+
   describe('types', () => {
     test('adobeDataLayer:change triggered by component push', () => {
       const mockCallback = jest.fn();
+
+      // edge case: unregister when no listener had been registered
+      adobeDataLayer.removeEventListener('adobeDataLayer:change');
 
       adobeDataLayer.addEventListener('adobeDataLayer:change', mockCallback);
       adobeDataLayer.push(testData.carousel1);
@@ -217,14 +325,14 @@ describe('Event listeners', () => {
       adobeDataLayer.removeEventListener('adobeDataLayer:event');
       adobeDataLayer.push(testData.carousel1click);
       expect(mockCallback.mock.calls.length, 'callback not triggered second time').toBe(1);
-    })
+    });
 
     test('adobeDataLayer:change not triggered by event push', () => {
       const mockCallback = jest.fn();
 
       adobeDataLayer.addEventListener('adobeDataLayer:change', mockCallback);
       adobeDataLayer.push({
-        "event": "page loaded"
+        event: 'page loaded'
       });
       expect(mockCallback.mock.calls.length, 'callback not triggered').toBe(0);
       adobeDataLayer.push(testData.carousel1click);
@@ -404,7 +512,7 @@ describe('Event listeners', () => {
 
       adobeDataLayer.push(testData.carousel1oldId);
       adobeDataLayer.addEventListener('adobeDataLayer:change', compareOldNewValueFunction, {
-          path: 'component.carousel.carousel1.id',
+        path: 'component.carousel.carousel1.id'
       });
       adobeDataLayer.push(testData.carousel1newId);
       expect(mockCallback.mock.calls.length).toBe(2);
@@ -427,9 +535,9 @@ describe('Event listeners', () => {
         if (isEqual(this.getState(), newState)) mockCallback();
       };
 
-      adobeDataLayer.push(merge({ event: 'adobeDataLayer:change' }, testData.carousel1oldId ));
+      adobeDataLayer.push(merge({ event: 'adobeDataLayer:change' }, testData.carousel1oldId));
       adobeDataLayer.addEventListener('adobeDataLayer:change', compareGetStateWithNewStateFunction);
-      adobeDataLayer.push(merge({ event: 'adobeDataLayer:change' }, testData.carousel1oldId ));
+      adobeDataLayer.push(merge({ event: 'adobeDataLayer:change' }, testData.carousel1oldId));
       expect(mockCallback.mock.calls.length).toBe(1);
     });
 
@@ -555,6 +663,8 @@ test('reset', () => {
 // -----------------------------------------------------------------------------------------------------------------
 
 describe('Performance', () => {
+  clearDL();
+
   // high load benchmark: runs alone in 10.139s with commit: df0fef59c86635d3c29e6f698352491dcf39003c (15/oct/2019)
   test.skip('high load', () => {
     const mockCallback = jest.fn();
@@ -563,8 +673,8 @@ describe('Performance', () => {
     adobeDataLayer.addEventListener('carousel clicked', mockCallback);
 
     for (let i = 0; i < 1000; i++) {
-      let pageId = '/content/mysite/en/products/crossfit' + i;
-      let pageKey = 'page' + i;
+      const pageId = '/content/mysite/en/products/crossfit' + i;
+      const pageKey = 'page' + i;
       data[pageKey] = {
         id: pageId,
         siteLanguage: 'en-us',
@@ -581,5 +691,179 @@ describe('Performance', () => {
       expect(adobeDataLayer.getState()).toStrictEqual(data);
       expect(mockCallback.mock.calls.length).toBe(i + 1);
     }
+  });
+});
+
+// -----------------------------------------------------------------------------------------------------------------
+// Utils
+// -----------------------------------------------------------------------------------------------------------------
+
+describe('Utils', () => {
+  clearDL();
+
+  describe('ancestorRemoved', () => {
+    test('removed', () => {
+      expect(ancestorRemoved(testData.componentNull, 'component.carousel')).toBeTruthy();
+      expect(ancestorRemoved(testData.componentNull, 'component.carousel.carousel1')).toBeTruthy();
+    });
+    test('not removed', () => {
+      expect(ancestorRemoved(testData.carousel1, 'component.carousel')).toBeFalsy();
+      expect(ancestorRemoved(testData.carousel1, 'component.carousel.carousel1')).toBeFalsy();
+    });
+  });
+
+  describe('customMerge', () => {
+    test('merges object', () => {
+      const objectInitial = { prop1: 'foo' };
+      const objectSource = { prop2: 'bar' };
+      const objectFinal = { prop1: 'foo', prop2: 'bar' };
+      customMerge(objectInitial, objectSource);
+      expect(objectInitial).toEqual(objectFinal);
+    });
+    test('overrides with null and undefined', () => {
+      const objectInitial = { prop1: 'foo', prop2: 'bar' };
+      const objectSource = { prop1: null, prop2: undefined };
+      const objectFinal = { prop1: null, prop2: null };
+      customMerge(objectInitial, objectSource);
+      expect(objectInitial).toEqual(objectFinal);
+    });
+  });
+
+  describe('dataMatchesContraints', () => {
+    test('event', () => {
+      expect(dataMatchesContraints(testData.carousel1click, ITEM_CONSTRAINTS.event)).toBeTruthy();
+    });
+    test('listenerOn', () => {
+      const listenerOn = {
+        on: 'event',
+        handler: () => {},
+        scope: 'future',
+        path: 'component.carousel1'
+      };
+      expect(dataMatchesContraints(listenerOn, ITEM_CONSTRAINTS.listenerOn)).toBeTruthy();
+    });
+    test('listenerOn with wrong scope (optional)', () => {
+      const listenerOn = {
+        on: 'event',
+        handler: () => {},
+        scope: 'wrong',
+        path: 'component.carousel1'
+      };
+      expect(dataMatchesContraints(listenerOn, ITEM_CONSTRAINTS.listenerOn)).toBeFalsy();
+    });
+    test('listenerOn with wrong scope (not optional)', () => {
+      const constraints = {
+        scope: {
+          type: 'string',
+          values: ['past', 'future', 'all']
+        }
+      };
+      const listenerOn = {
+        on: 'event',
+        handler: () => {},
+        scope: 'past'
+      };
+      expect(dataMatchesContraints(listenerOn, constraints)).toBeTruthy();
+    });
+    test('listenerOff', () => {
+      const listenerOff = {
+        off: 'event',
+        handler: () => {},
+        scope: 'future',
+        path: 'component.carousel1'
+      };
+      expect(dataMatchesContraints(listenerOff, ITEM_CONSTRAINTS.listenerOff)).toBeTruthy();
+    });
+  });
+
+  describe('indexOfListener', () => {
+    test('indexOfListener', () => {
+      const fct1 = jest.fn();
+      const fct2 = jest.fn();
+      const listener1 = {
+        event: 'click',
+        handler: fct1
+      };
+      const listener2 = {
+        event: 'click',
+        handler: fct2
+      };
+      const listener3 = {
+        event: 'load',
+        handler: fct1
+      };
+      const listeners = {
+        click: [listener1, listener2]
+      };
+      expect(indexOfListener(listeners, listener2)).toBe(1);
+      expect(indexOfListener(listeners, listener3)).toBe(-1);
+    });
+  });
+
+  describe('listenerMatch', () => {
+    test('event type', () => {
+      const listener = {
+        event: 'user loaded',
+        handler: () => {},
+        scope: 'all',
+        path: null
+      };
+      const item = {
+        config: { event: 'user loaded' },
+        type: 'event'
+      };
+      expect(listenerMatch(listener, item)).toBeTruthy();
+    });
+    test('with correct path', () => {
+      const listener = {
+        event: 'viewed',
+        handler: () => {},
+        scope: 'all',
+        path: 'component.image.image1'
+      };
+      const item = {
+        config: testData.image1viewed,
+        type: 'event',
+        data: testData.image1
+      };
+      expect(listenerMatch(listener, item)).toBeTruthy();
+    });
+    test('with incorrect path', () => {
+      const listener = {
+        event: 'viewed',
+        handler: () => {},
+        scope: 'all',
+        path: 'component.carousel'
+      };
+      const item = {
+        config: testData.image1viewed,
+        type: 'event',
+        data: testData.image1
+      };
+      expect(listenerMatch(listener, item)).toBeFalsy();
+    });
+    test('wrong item type', () => {
+      const listener = {
+        event: 'user loaded',
+        handler: () => {},
+        scope: 'all',
+        path: null
+      };
+      const item = {
+        config: { event: 'user loaded' },
+        type: 'wrong'
+      };
+      expect(listenerMatch(listener, item)).toBeFalsy();
+    });
+    test('item type == data', () => {
+      const listener = {
+        event: 'user loaded',
+        handler: () => {}
+      };
+      const item = {
+        type: 'data'
+      };
+      expect(listenerMatch(listener, item)).toBeFalsy();
+    });
   });
 });

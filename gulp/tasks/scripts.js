@@ -21,12 +21,13 @@ module.exports = function(gulp) {
 
   gulp.task('scripts', () => {
     const b = browserify({
-      entries: './src/scripts/DataLayer.js',
+      entries: './src/index.js',
       debug: true
     });
 
     return b.bundle()
       .pipe(source('adobe-client-data-layer.js'))
+      .pipe(gulp.dest('./dist/'))
       .pipe(buffer())
       .pipe(sourcemaps.init({loadMaps: true}))
       .pipe((babel({

@@ -1,13 +1,12 @@
 ## Adobe Client Data Layer
 
+[![NPM version](https://badgen.net/npm/v/@adobe/adobe-client-data-layer)](https://www.npmjs.com/package/@adobe/adobe-client-data-layer)
 [![BundlePhobia](https://badgen.net/bundlephobia/minzip/@adobe/adobe-client-data-layer)](https://bundlephobia.com/result?p=@adobe/adobe-client-data-layer)
 [![LGTM](https://badgen.net/lgtm/grade/g/adobe/adobe-client-data-layer)](https://lgtm.com/projects/g/adobe/adobe-client-data-layer)
 [![CircleCI](https://badgen.net/circleci/github/adobe/adobe-client-data-layer)](https://app.circleci.com/pipelines/github/adobe/adobe-client-data-layer)
 [![Codecov](https://badgen.net/codecov/c/github/adobe/adobe-client-data-layer)](https://codecov.io/gh/adobe/adobe-client-data-layer)
 
 The Adobe Client Data Layer aims to reduce the effort to instrument websites by providing a standardized method to expose and access any kind of data for any script.
-
-> **Tech Preview** - this is currently a tech preview, there may be API changes and it therefore shouldn't be used in production. If you have any feedback please comment on the [AEM Core Components Developer Google Group](https://groups.google.com/forum/#!forum/aem-core-components-dev).
 
 ## Documentation
 
@@ -28,6 +27,8 @@ This script can then be included in your page head, as follows:
 <script src="adobe-client-data-layer.min.js" async defer></script>
 ```
 
+> **Note** - you can directly access the [minified version](https://unpkg.com/browse/@adobe/adobe-client-data-layer@1.0.0/dist/adobe-client-data-layer.min.js) of the data layer without downloading the sources and compiling them.
+
 ## Building / Testing
 
 First run the following commands:
@@ -40,7 +41,7 @@ Then choose from the following npm scripts:
 * `npm run build` - run the tests and generates the build in the `./dist` folder.
 * `npm run test` - run the unit tests
 
-Note: you can [get some stats](https://bundlephobia.com/result?p=@adobe/adobe-client-data-layer@1.0.0-beta.3) (bundle size, download time) about the released version.
+> **Note** - you can [get some stats](https://bundlephobia.com/result?p=@adobe/adobe-client-data-layer@1.0.0) (bundle size, download time) about the released version.
 
 ## Releasing
 
