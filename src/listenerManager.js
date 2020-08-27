@@ -104,7 +104,7 @@ module.exports = function(dataLayerManager) {
     // Resets the listeners based on the options of what to keep
     resetListeners: function(keepOptions) {
       const filteredListeners = {};
-      if (keepOptions) {
+      if (keepOptions && keepOptions.events) {
         const events = keepOptions.events;
         events.forEach(function(event) {
           if (_listeners[event]) {

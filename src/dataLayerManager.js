@@ -208,7 +208,7 @@ module.exports = function(config) {
 
       // Reset the data layer state
       const filteredState = {};
-      if (keepOptions) {
+      if (keepOptions && keepOptions.paths) {
         const paths = keepOptions.paths;
         paths.forEach(function(path) {
           const value = get(_state, path);
