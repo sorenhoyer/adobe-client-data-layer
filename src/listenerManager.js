@@ -25,7 +25,7 @@ const indexOfListener = require('./utils/indexOfListener');
  * @returns {ListenerManager} A listener manager.
  */
 module.exports = function(dataLayerManager) {
-  const _listeners = {};
+  let _listeners = {};
   const _dataLayerManager = dataLayerManager;
 
   /**

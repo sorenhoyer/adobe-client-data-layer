@@ -630,8 +630,8 @@ test('reset', () => {
 
   const options = {
     keep: {
-      paths: ["page", "component.carousel.carousel1"],
-      events: ["click"]
+      paths: ['page', 'component.carousel.carousel1'],
+      events: ['click']
     }
   };
   adobeDataLayer.reset(options);
@@ -655,7 +655,6 @@ test('reset', () => {
     }
   };
   expect(isEqual(adobeDataLayer.getState(), filteredData));
-
 });
 
 // -----------------------------------------------------------------------------------------------------------------

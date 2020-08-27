@@ -189,25 +189,24 @@ window.adobeDataLayer.push({
 // Resetting a data layer
 // -----------------------------------------------------------------------------------------------------------------
 
-adobeDataLayer.getState('component.carousel');
+window.adobeDataLayer.getState('component.carousel');
 
-options = {
+let options = {
   keep: {
-    paths: ["component.carousel.carousel4"],
-    events: ["click"],
+    paths: ['component.carousel.carousel4'],
+    events: ['click'],
     history: true // will keep the data layer items history
   }
 };
 
-adobeDataLayer.reset(options);
+window.adobeDataLayer.reset(options);
 
 options = {
   remove: {
-    paths: ["component.carousel.carousel4"],
-    events: ["click"],
+    paths: ['component.carousel.carousel4'],
+    events: ['click'],
     history: true // will remove the data layer items history
   }
 };
 
-adobeDataLayer.reset(options);
-
+window.adobeDataLayer.reset(options);
