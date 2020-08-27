@@ -100,6 +100,19 @@ module.exports = function(dataLayerManager) {
      */
     triggerListener: function(listener, item) {
       _callHandler(listener, item, true);
+    },
+    // Resets the listeners based on the options of what to keep
+    resetListeners: function(keepOptions) {
+      const filteredListeners = {};
+      if (keepOptions) {
+        const events = keepOptions.events;
+        events.forEach(function(event) {
+          if (_listeners[event]) {
+            filteredListeners[event] = _listeners[event];
+          }
+        });
+      }
+      _listeners = filteredListeners;
     }
   };
 

@@ -20,6 +20,7 @@ const Listener = require('./listener');
 const ListenerManager = require('./listenerManager');
 const CONSTANTS = require('./constants');
 const customMerge = require('./utils/customMerge');
+const set = require('lodash/set');
 
 /**
  * Manager
@@ -188,6 +189,39 @@ module.exports = function(config) {
       });
 
       _processItem(eventListenerItem);
+    };
+
+    /**
+     * Resets the data layer.
+     *
+     * @param keepOptions Options include:
+     * - paths: array of paths to keep
+     * - events: array of events to keep
+     * - history: true to keep the push history, false otherwise
+     */
+    _dataLayer.reset = function(keepOptions) {
+      // Reset the push history
+      const keepHistory = keepOptions && keepOptions.history;
+      if (!keepHistory) {
+        _dataLayer.length = 0;
+      }
+
+      // Reset the data layer state
+      const filteredState = {};
+      if (keepOptions) {
+        const paths = keepOptions.paths;
+        paths.forEach(function(path) {
+          const value = get(_state, path);
+          if (value) {
+            set(filteredState, path, value);
+          }
+        });
+      }
+      _state = filteredState;
+      _previousStateCopy = {};
+
+      // Reset the data layer listeners
+      _listenerManager.resetListeners(keepOptions);
     };
   };
 
