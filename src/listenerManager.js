@@ -17,6 +17,7 @@ const get = _.get;
 const constants = require('./constants');
 const listenerMatch = require('./utils/listenerMatch');
 const indexOfListener = require('./utils/indexOfListener');
+const omit = require('lodash/omit');
 
 /**
  * Creates a listener manager.
@@ -102,17 +103,20 @@ module.exports = function(dataLayerManager) {
       _callHandler(listener, item, true);
     },
     // Resets the listeners based on the options of what to keep
-    resetListeners: function(keepOptions) {
+    resetListeners: function(options) {
       const filteredListeners = {};
-      if (keepOptions && keepOptions.events) {
-        const events = keepOptions.events;
+      if (options && options.keep && options.keep.events) {
+        const events = options.keep.events;
         events.forEach(function(event) {
           if (_listeners[event]) {
             filteredListeners[event] = _listeners[event];
           }
         });
+        _listeners = filteredListeners;
+      } else if (options && options.remove && options.remove.events) {
+        const events = options.remove.events;
+        _listeners = omit(_listeners, events);
       }
-      _listeners = filteredListeners;
     }
   };
 

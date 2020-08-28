@@ -21,6 +21,7 @@ const ListenerManager = require('./listenerManager');
 const CONSTANTS = require('./constants');
 const customMerge = require('./utils/customMerge');
 const set = require('lodash/set');
+const omit = require('lodash/omit');
 
 /**
  * Manager
@@ -194,34 +195,38 @@ module.exports = function(config) {
     /**
      * Resets the data layer.
      *
-     * @param keepOptions Options include:
+     * @param {Object} options Options include:
      * - paths: array of paths to keep
      * - events: array of events to keep
      * - history: true to keep the push history, false otherwise
      */
-    _dataLayer.reset = function(keepOptions) {
+    _dataLayer.reset = function(options) {
       // Reset the push history
-      const keepHistory = keepOptions && keepOptions.history;
+      const keepHistory = (options && options.keep && options.keep.history) ||
+                          (options && options.remove && !options.remove.history);
       if (!keepHistory) {
         _dataLayer.length = 0;
       }
 
       // Reset the data layer state
-      const filteredState = {};
-      if (keepOptions && keepOptions.paths) {
-        const paths = keepOptions.paths;
+      let filteredState = {};
+      if (options && options.keep && options.keep.paths) {
+        const paths = options.keep.paths;
         paths.forEach(function(path) {
           const value = get(_state, path);
           if (value) {
             set(filteredState, path, value);
           }
         });
+      } else if (options && options.remove && options.remove.paths) {
+        const paths = options.remove.paths;
+        filteredState = omit(_state, paths);
       }
       _state = filteredState;
       _previousStateCopy = {};
 
       // Reset the data layer listeners
-      _listenerManager.resetListeners(keepOptions);
+      _listenerManager.resetListeners(options);
     };
   };
 
