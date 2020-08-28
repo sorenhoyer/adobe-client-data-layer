@@ -600,6 +600,64 @@ describe('Event listeners', () => {
 });
 
 // -----------------------------------------------------------------------------------------------------------------
+// Reset
+// -----------------------------------------------------------------------------------------------------------------
+
+test('reset', () => {
+  const data = {
+    page: {
+      id: '/content/mysite/en/products/crossfit',
+      siteLanguage: 'en-us',
+      siteCountry: 'US',
+      pageType: 'product detail',
+      pageName: 'pdp - crossfit zoom',
+      pageCategory: 'womens > shoes > athletic'
+    },
+    component: {
+      carousel: {
+        carousel1: {
+          id: '/content/mysite/en/home/jcr:content/root/carousel1',
+          items: {}
+        },
+        carousel2: {
+          id: '/content/mysite/en/home/jcr:content/root/carousel2',
+          items: {}
+        }
+      }
+    }
+  };
+  adobeDataLayer.push(data);
+
+  const options = {
+    keep: {
+      paths: ['page', 'component.carousel.carousel1'],
+      events: ['click']
+    }
+  };
+  adobeDataLayer.reset(options);
+
+  const filteredData = {
+    page: {
+      id: '/content/mysite/en/products/crossfit',
+      siteLanguage: 'en-us',
+      siteCountry: 'US',
+      pageType: 'product detail',
+      pageName: 'pdp - crossfit zoom',
+      pageCategory: 'womens > shoes > athletic'
+    },
+    component: {
+      carousel: {
+        carousel1: {
+          id: '/content/mysite/en/home/jcr:content/root/carousel1',
+          items: {}
+        }
+      }
+    }
+  };
+  expect(isEqual(adobeDataLayer.getState(), filteredData));
+});
+
+// -----------------------------------------------------------------------------------------------------------------
 // Performance
 // -----------------------------------------------------------------------------------------------------------------
 

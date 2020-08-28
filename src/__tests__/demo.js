@@ -162,6 +162,12 @@ window.adobeDataLayer.push({
   }
 });
 
+window.adobeDataLayer.push({
+  component: {
+    carousel: null
+  }
+});
+
 // -----------------------------------------------------------------------------------------------------------------
 // Removing an event listener
 // -----------------------------------------------------------------------------------------------------------------
@@ -178,3 +184,29 @@ window.adobeDataLayer.push({
     }
   }
 });
+
+// -----------------------------------------------------------------------------------------------------------------
+// Resetting a data layer
+// -----------------------------------------------------------------------------------------------------------------
+
+window.adobeDataLayer.getState('component.carousel');
+
+let options = {
+  keep: {
+    paths: ['component.carousel.carousel4'],
+    events: ['click'],
+    history: true // will keep the data layer items history
+  }
+};
+
+window.adobeDataLayer.reset(options);
+
+options = {
+  remove: {
+    paths: ['component.carousel.carousel4'],
+    events: ['click'],
+    history: true // will remove the data layer items history
+  }
+};
+
+window.adobeDataLayer.reset(options);
